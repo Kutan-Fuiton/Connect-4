@@ -1,22 +1,20 @@
+import time
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-import time
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 
-from game.board import (
-    create_board,
-    apply_move,
-    PLAYER_HUMAN,
-    PLAYER_AI
-)
+# Import game modules
+from game.board import create_board, apply_move, PLAYER_HUMAN, PLAYER_AI
 from game.rules import check_winner, is_draw
 from game.utils import get_valid_moves
 from ai.random_ai import get_move as random_ai
 from ai.minimax_ai import get_move as minimax_ai
 
+app = FastAPI()
 
-app = FastAPI(title="Connect-4 AI Backend")
+app.mount("/static", StaticFiles(directory="frontend"), name="static")
 
-# Allow frontend access
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -24,69 +22,80 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# --- State ---
+class GameState:
+    def __init__(self):
+        self.board = create_board()
+        self.game_over = False
+        self.winner = 0
+        self.difficulty = "easy"
+        self.last_move = None  # Track last move for frontend logic (optional)
 
-# ---------- In-memory Game State ----------
-game_state = {
-    "board": create_board(),
-    "game_over": False,
-    "winner": 0,
-    "difficulty": "easy"
-}
+game_state = GameState()
 
+# --- Endpoints ---
 
-# ---------- API Endpoints ----------
+@app.get("/")
+def read_root():
+    return FileResponse('frontend/index.html')
 
 @app.get("/state")
 def get_state():
     return {
-        "board": game_state["board"].tolist(),
-        "game_over": game_state["game_over"],
-        "winner": game_state["winner"]
+        "board": game_state.board.tolist(),
+        "game_over": game_state.game_over,
+        "winner": int(game_state.winner),
+        "difficulty": game_state.difficulty
     }
-
 
 @app.post("/reset")
 def reset_game(difficulty: str = "easy"):
-    game_state["board"] = create_board()
-    game_state["game_over"] = False
-    game_state["winner"] = 0
-    game_state["difficulty"] = difficulty
+    game_state.board = create_board()
+    game_state.game_over = False
+    game_state.winner = 0
+    game_state.difficulty = difficulty
+    game_state.last_move = None
     return {"status": "reset"}
-
 
 @app.post("/move/{col}")
 def player_move(col: int):
-    if game_state["game_over"]:
+    # 1. Check Game Over
+    if game_state.game_over:
         return {"error": "Game is over"}
 
-    if col not in get_valid_moves(game_state["board"]):
+    if col not in get_valid_moves(game_state.board):
         return {"error": "Invalid move"}
 
-    # Human move
-    apply_move(game_state["board"], col, PLAYER_HUMAN)
-
-    winner = check_winner(game_state["board"])
-    if winner or is_draw(game_state["board"]):
-        game_state["game_over"] = True
-        game_state["winner"] = winner
+    # 2. Human Move
+    apply_move(game_state.board, col, PLAYER_HUMAN)
+    
+    # Check Human Win
+    winner = check_winner(game_state.board)
+    if winner != 0 or is_draw(game_state.board):
+        game_state.game_over = True
+        game_state.winner = winner
         return get_state()
 
-    # Pause (human-like)
-    time.sleep(0.6)
+    # 3. Pause for effect
+    time.sleep(0.5) 
 
-    # AI move
-    ai_col = (
-        random_ai(game_state["board"])
-        if game_state["difficulty"] == "easy"
-        else minimax_ai(game_state["board"])
-    )
+    # 4. AI Move
+    ai_col = None
+    
+    # Logic: Easy = Random, Medium OR Hard = Minimax (for now)
+    if game_state.difficulty == "easy":
+        ai_col = random_ai(game_state.board)
+    else:
+        # Both Medium and Hard use Minimax until you add DQN
+        ai_col = minimax_ai(game_state.board)
 
     if ai_col is not None:
-        apply_move(game_state["board"], ai_col, PLAYER_AI)
-
-    winner = check_winner(game_state["board"])
-    if winner or is_draw(game_state["board"]):
-        game_state["game_over"] = True
-        game_state["winner"] = winner
+        apply_move(game_state.board, ai_col, PLAYER_AI)
+        
+        # Check AI Win
+        winner = check_winner(game_state.board)
+        if winner != 0 or is_draw(game_state.board):
+            game_state.game_over = True
+            game_state.winner = winner
 
     return get_state()

@@ -2,41 +2,40 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
-    <title>Connect-4 vs AI</title>
-
-    <link rel="stylesheet" href="style.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Connect-4 AI</title>
+    <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-
     <div class="container">
-        <h1>🎮 Connect-4</h1>
-        <div class="subtitle">Challenge the AI!</div>
-
-        <div class="legend">
-            <div class="player you">
-                <span class="token red"></span>
-                You
+        <h1>Connect-4</h1>
+        
+        <div class="header-info">
+            <div id="status" class="status-badge">Your Turn</div>
+            <div class="difficulty-selector">
+                <label>Level:</label>
+                <select id="difficulty-select">
+                    <option value="easy">Easy (Random)</option>
+                    <option value="medium">Medium (Minimax)</option>
+                    <option value="hard">Hard (Same as Medium for now)</option>
+                </select>
             </div>
-            <div class="player ai">
-                <span class="token yellow"></span>
-                AI
-            </div>
+            <button id="reset-btn" class="reset-btn">New Game</button>
         </div>
-
-        <div id="status" class="status">Loading...</div>
 
         <div class="game-wrapper">
-            <div id="click-row" class="click-row"></div>
-            <div id="board" class="board"></div>
+            <div class="column-indicators" id="click-row"></div>
+            
+            <div class="board" id="board">
+                </div>
         </div>
 
-        <div class="controls">
-            <button onclick="resetGame('easy')">🎯 Easy Mode</button>
-            <button onclick="resetGame('hard')">🔥 Hard Mode</button>
+        <div class="legend">
+            <div class="player p1"><span class="dot red"></span> You</div>
+            <div class="player p2"><span class="dot yellow"></span> AI</div>
         </div>
     </div>
 
-
-    <script src="script.js"></script>
+    <script src="/static/script.js"></script>
 </body>
 </html>
