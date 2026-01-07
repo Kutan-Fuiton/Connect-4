@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Connect-4 vs AI</title>
+
+    <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+    <div class="container">
+        <h1>🎮 Connect-4</h1>
+        <div class="subtitle">Challenge the AI!</div>
+
+        <div class="legend">
+            <div class="player you">
+                <span class="token red"></span>
+                You
+            </div>
+            <div class="player ai">
+                <span class="token yellow"></span>
+                AI
+            </div>
+        </div>
+
+        <div id="status" class="status">Loading...</div>
+
+        <div class="game-wrapper">
+            <div id="click-row" class="click-row"></div>
+            <div id="board" class="board"></div>
+        </div>
+
+        <div class="controls">
+            <button onclick="resetGame('easy')">🎯 Easy Mode</button>
+            <button onclick="resetGame('hard')">🔥 Hard Mode</button>
+        </div>
+    </div>
+
+
+    <script src="script.js"></script>
+</body>
+</html>
