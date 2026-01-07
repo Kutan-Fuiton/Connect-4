@@ -9,16 +9,21 @@ const statusDiv = document.getElementById("status");
 const difficultySelect = document.getElementById("difficulty-select");
 const resetBtn = document.getElementById("reset-btn");
 
+const modal = document.getElementById("result-modal");
+const modalTitle = document.getElementById("modal-title");
+const modalMessage = document.getElementById("modal-message");
+const modalEmoji = document.getElementById("modal-emoji");
+
 let isProcessing = false;
 
 // Init
 document.addEventListener("DOMContentLoaded", () => {
-    buildGridHTML();  // Create the empty grid structure once
-    initClickAreas(); // Create the arrows on top
-    resetGame();      // Start game
+    buildGridHTML();
+    initClickAreas();
+    resetGame();
 });
 
-// 1. Build the static grid structure (Empty Holes)
+// Build grid
 function buildGridHTML() {
     boardElement.innerHTML = "";
     for (let r = 0; r < ROWS; r++) {
@@ -41,103 +46,104 @@ function initClickAreas() {
     }
 }
 
-// 2. Button Listeners
 resetBtn.addEventListener("click", resetGame);
 
-// --- API Logic ---
-
+// -------- API --------
 async function resetGame() {
     const difficulty = difficultySelect.value;
     statusDiv.textContent = "Starting...";
-    
-    // Lock while resetting to prevent glitches
-    isProcessing = true; 
-    
+    isProcessing = true;
+
+    modal.classList.add("hidden");
+
     try {
         await fetch(`/reset?difficulty=${difficulty}`, { method: "POST" });
         await fetchState();
-        
-        // --- FIX IS HERE: Unlock the board explicitly ---
         isProcessing = false;
-        statusDiv.textContent = "Your Turn"; 
-        
-    } catch (e) {
-        console.error(e);
-        isProcessing = false; // Unlock even if error
+        statusDiv.textContent = "Your Turn";
+    } catch {
+        isProcessing = false;
     }
 }
 
 async function handleMove(col) {
     if (isProcessing) return;
-    
     isProcessing = true;
     statusDiv.textContent = "AI Thinking...";
 
     try {
         const res = await fetch(`/move/${col}`, { method: "POST" });
         const data = await res.json();
-        
+
         if (data.error) {
-            // If move was invalid (e.g. column full), ignore and unlock
-            if (data.error !== "Game is over") {
-                isProcessing = false;
-                statusDiv.textContent = "Your Turn";
-            }
-        } else {
-            updateBoard(data.board); // Update visuals
-            
-            if (data.game_over) {
-                // Keep locked if game over
-                if (data.winner === 1) statusDiv.textContent = "🎉 You Win!";
-                else if (data.winner === -1) statusDiv.textContent = "🤖 AI Wins!";
-                else statusDiv.textContent = "🤝 Draw!";
-            } else {
-                // Unlock if game continues
-                isProcessing = false;
-                statusDiv.textContent = "Your Turn";
-            }
+            isProcessing = false;
+            statusDiv.textContent = "Your Turn";
+            return;
         }
-    } catch (e) {
-        console.error(e);
+
+        updateBoard(data.board);
+
+        if (data.game_over) {
+            // ⏳ Let winning disc settle first
+            setTimeout(() => showModal(data.winner), 700);
+            return;
+        }
+
+        // ⏳ AI delay before giving control back
+        setTimeout(() => {
+            isProcessing = false;
+            statusDiv.textContent = "Your Turn";
+        }, 600);
+
+    } catch {
         isProcessing = false;
     }
 }
 
 async function fetchState() {
-    try {
-        const res = await fetch("/state");
-        const data = await res.json();
-        updateBoard(data.board);
-        // We don't unlock here because resetGame handles it
-    } catch (e) {
-        console.error(e);
-    }
+    const res = await fetch("/state");
+    const data = await res.json();
+    updateBoard(data.board);
 }
 
-// --- Rendering ---
-
+// -------- RENDER --------
 function updateBoard(serverBoard) {
     for (let r = 0; r < ROWS; r++) {
         for (let c = 0; c < COLS; c++) {
             const val = serverBoard[r][c];
-            const cellDiv = document.getElementById(`cell-${r}-${c}`);
-            const hasToken = cellDiv.querySelector(".token");
+            const cell = document.getElementById(`cell-${r}-${c}`);
+            const token = cell.querySelector(".token");
 
-            // 1. Clear if server says empty but we have token (Reset scenario)
-            if (val === 0 && hasToken) {
-                cellDiv.innerHTML = ""; 
-            } 
-            // 2. Add if server says occupied but we have NO token (Move scenario)
-            else if (val !== 0 && !hasToken) {
-                const token = document.createElement("div");
-                token.classList.add("token");
-                token.classList.add("drop-anim"); 
-                
-                if (val === 1) token.classList.add("red");
-                else token.classList.add("yellow");
-                
-                cellDiv.appendChild(token);
+            if (val === 0 && token) cell.innerHTML = "";
+            else if (val !== 0 && !token) {
+                const t = document.createElement("div");
+                t.classList.add("token", "drop-anim", val === 1 ? "red" : "yellow");
+                cell.appendChild(t);
             }
         }
     }
+}
+
+// -------- MODAL --------
+function showModal(winner) {
+    if (winner === 1) {
+        modalEmoji.textContent = "🎉";
+        modalTitle.textContent = "You Win!";
+        modalMessage.textContent = "Congratulations! Well played 🎊";
+    } else if (winner === -1) {
+        modalEmoji.textContent = "😢";
+        modalTitle.textContent = "You Lost";
+        modalMessage.textContent = "The AI outplayed you this time 🤖";
+    } else {
+        modalEmoji.textContent = "🤝";
+        modalTitle.textContent = "Draw";
+        modalMessage.textContent = "That was a close one!";
+    }
+
+    modal.classList.remove("hidden");
+}
+
+function closeModal() {
+    modal.classList.add("hidden");
+    resetGame();
 }

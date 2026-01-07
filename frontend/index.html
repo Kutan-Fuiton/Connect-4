@@ -1,17 +1,27 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Connect-4 AI</title>
+
     <link rel="stylesheet" href="/static/style.css">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap"
+        rel="stylesheet">
 </head>
+
 <body>
     <div class="container">
         <h1>Connect-4</h1>
-        
+
         <div class="header-info">
             <div id="status" class="status-badge">Your Turn</div>
+
             <div class="difficulty-selector">
                 <label>Level:</label>
                 <select id="difficulty-select">
@@ -20,14 +30,26 @@
                     <option value="hard">Hard (Same as Medium for now)</option>
                 </select>
             </div>
+
             <button id="reset-btn" class="reset-btn">New Game</button>
         </div>
 
         <div class="game-wrapper">
             <div class="column-indicators" id="click-row"></div>
-            
-            <div class="board" id="board">
+
+            <div class="board-wrapper">
+                <div class="board" id="board"></div>
+
+                <!-- SINGLE MODAL (correct placement) -->
+                <div id="result-modal" class="modal hidden">
+                    <div class="modal-content">
+                        <div id="modal-emoji" class="modal-emoji">🎉</div>
+                        <h2 id="modal-title">You Win!</h2>
+                        <p id="modal-message">Congratulations! Well played 🎊</p>
+                        <button onclick="closeModal()">Play Again</button>
+                    </div>
                 </div>
+            </div>
         </div>
 
         <div class="legend">
@@ -38,4 +60,5 @@
 
     <script src="/static/script.js"></script>
 </body>
+
 </html>
