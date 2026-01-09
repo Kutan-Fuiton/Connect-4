@@ -57,3 +57,21 @@ from ai.random_ai import get_move
 
 # print("Minimax AI played:", col)
 # print_board(board)
+
+
+# hard_ai.py test ----->
+import torch
+from ai.dqn_model import DQN
+
+model = DQN()
+model.load_state_dict(torch.load("dqn_model.pt", map_location="cpu"))
+model.eval()
+
+state1 = torch.zeros(42)
+state2 = torch.ones(42)
+
+print(model(state1))
+print(model(state2))
+
+dummy_board = torch.zeros(42)
+print(model(dummy_board))
