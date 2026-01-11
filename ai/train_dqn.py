@@ -15,15 +15,17 @@ from game.utils import get_valid_moves
 # ---------------- CONFIG ----------------
 GAMMA = 0.99
 LR = 1e-4
+
 BATCH_SIZE = 128
 BUFFER_SIZE = 100_000
-TARGET_UPDATE = 1000
+TARGET_UPDATE = 1_000
 
+# Faster & practical exploration
 EPS_START = 1.0
 EPS_END = 0.05
-EPS_DECAY = 500_000
+EPS_DECAY = 200_000   # 🔥 faster learning
 
-NUM_EPISODES = 500_000
+NUM_EPISODES = 100_000  # 🔥 enough to beat minimax
 DEVICE = "cpu"
 
 
@@ -80,55 +82,66 @@ def optimize():
 
 
 # ---------------- TRAIN LOOP ----------------
-for episode in range(NUM_EPISODES):
-    board = create_board()
-    state = board.flatten()
-    done = False
+try:
+    for episode in range(1, NUM_EPISODES + 1):
+        board = create_board()
+        state = board.flatten()
+        done = False
+        current_player = PLAYER_AI
 
-    current_player = PLAYER_AI
+        while not done:
+            if current_player == PLAYER_AI:
+                action = select_action(state, board)
+                apply_move(board, action, PLAYER_AI)
 
-    while not done:
-        if current_player == PLAYER_AI:
-            action = select_action(state, board)
-            apply_move(board, action, PLAYER_AI)
+                winner = check_winner(board)
+                draw = is_draw(board)
 
-            winner = check_winner(board)
-            draw = is_draw(board)
+                if winner == PLAYER_AI:
+                    reward = 1.0
+                    done = True
+                elif draw:
+                    reward = 0.3
+                    done = True
+                else:
+                    reward = -0.01
 
-            if winner == PLAYER_AI:
-                reward = 1.0
-                done = True
-            elif draw:
-                reward = 0.2
-                done = True
+                next_state = board.flatten()
+                memory.push(state, action, reward, next_state, done)
+                state = next_state
+
+                optimize()
+                current_player = PLAYER_HUMAN
+
             else:
-                reward = -0.01
+                opp_move = random.choice(get_valid_moves(board))
+                apply_move(board, opp_move, PLAYER_HUMAN)
 
-            next_state = board.flatten()
-            memory.push(state, action, reward, next_state, done)
-            state = next_state
+                if check_winner(board) == PLAYER_HUMAN:
+                    memory.push(state, action, -1.0, board.flatten(), True)
+                    done = True
+                elif is_draw(board):
+                    done = True
+                else:
+                    current_player = PLAYER_AI
 
-            optimize()
-            current_player = PLAYER_HUMAN
+        if episode % TARGET_UPDATE == 0:
+            target_net.load_state_dict(policy_net.state_dict())
 
-        else:
-            # Opponent plays random (curriculum later)
-            opp_move = random.choice(get_valid_moves(board))
-            apply_move(board, opp_move, PLAYER_HUMAN)
+        if episode % 5_000 == 0:
+            print(f"Episode {episode}")
 
-            if check_winner(board) == PLAYER_HUMAN:
-                memory.push(state, action, -1.0, board.flatten(), True)
-                done = True
-            elif is_draw(board):
-                done = True
-            else:
-                current_player = PLAYER_AI
+        if episode % 20_000 == 0:
+            torch.save(policy_net.state_dict(), "dqn_model.pt")
+            print("Checkpoint saved.")
 
-    if episode % TARGET_UPDATE == 0:
-        target_net.load_state_dict(policy_net.state_dict())
+except KeyboardInterrupt:
+    print("\nTraining interrupted by user. Saving model...")
+    torch.save(policy_net.state_dict(), "dqn_model.pt")
 
-    if episode % 10_000 == 0:
-        print(f"Episode {episode}")
+finally:
+    print("Training stopped. Final model saved.")
+
 
 # ---------------- SAVE ----------------
 torch.save(policy_net.state_dict(), "dqn_model.pt")

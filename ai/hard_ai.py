@@ -13,7 +13,7 @@ ROWS, COLS = 6, 7
 
 # Load trained DQN model
 model = DQN()
-model.load_state_dict(torch.load("dqn_model.pt", map_location="cpu"))
+model.load_state_dict(torch.load("models/dqn_model.pt", map_location="cpu"))
 model.eval()
 
 
