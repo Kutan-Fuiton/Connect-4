@@ -1,4 +1,3 @@
-import time
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -13,7 +12,6 @@ from game.utils import get_valid_moves
 from ai.random_ai import get_move as random_ai
 from ai.minimax_ai import get_move as minimax_ai
 
-# OPTIONAL (enable when DQN is ready)
 try:
     from ai.hard_ai import get_move as hard_ai
     DQN_AVAILABLE = True
@@ -71,29 +69,22 @@ def reset_game(difficulty: str = "easy"):
 @app.post("/move/{col}")
 def player_move(col: int):
 
-    print("Difficulty:", game_state.difficulty)
-
-    # ---- 1. STOP IF GAME OVER ----
     if game_state.game_over:
         return {"error": "Game is over"}
 
     if col not in get_valid_moves(game_state.board):
         return {"error": "Invalid move"}
 
-    # ---- 2. HUMAN MOVE ----
+    # ---- HUMAN MOVE ----
     apply_move(game_state.board, col, PLAYER_HUMAN)
 
-    # ---- 3. CHECK HUMAN WIN ----
     winner = check_winner(game_state.board)
     if winner != 0 or is_draw(game_state.board):
         game_state.game_over = True
         game_state.winner = winner
         return get_state()
 
-    # ---- 4. AI THINKING DELAY (REALISTIC) ----
-    time.sleep(0.7)
-
-    # ---- 5. AI MOVE ----
+    # ---- AI MOVE ----
     if game_state.difficulty == "easy":
         ai_col = random_ai(game_state.board)
 
@@ -101,17 +92,11 @@ def player_move(col: int):
         ai_col = minimax_ai(game_state.board)
 
     else:  # HARD
-        if DQN_AVAILABLE:
-            print("Using HARD AI (DQN)")
-            ai_col = hard_ai(game_state.board)
-        else:
-            # fallback if DQN not loaded
-            ai_col = minimax_ai(game_state.board)
+        ai_col = hard_ai(game_state.board) if DQN_AVAILABLE else minimax_ai(game_state.board)
 
     if ai_col is not None:
         apply_move(game_state.board, ai_col, PLAYER_AI)
 
-    # ---- 6. CHECK AI WIN ----
     winner = check_winner(game_state.board)
     if winner != 0 or is_draw(game_state.board):
         game_state.game_over = True
