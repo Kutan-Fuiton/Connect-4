@@ -1,4 +1,4 @@
-# 🎮 Connect‑4 AI (FastAPI + Reinforcement Learning)
+# 🎮 Connect‑4 AI 
 
 A **full‑stack Connect‑4 game** featuring **multiple AI difficulty levels**, including a **Deep Reinforcement Learning (DQN) agent trained to challenge and beat Minimax**.
 
@@ -94,20 +94,6 @@ uvicorn main:app --reload
 ```
 http://127.0.0.1:8000
 ```
-
----
-
-## 🌍 Deployment (Render)
-
-### Start Command
-
-```bash
-uvicorn main:app --host 0.0.0.0 --port 10000
-```
-
-### Notes
-- `dqn_model.pt` must be in root directory
-- Hard AI loads lazily for faster startup
 
 ---
 
